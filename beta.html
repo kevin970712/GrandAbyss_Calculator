@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>地底迷宮機率計算機</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: #ffffff;
+        }
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .result-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .result-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .result-scroll::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 md:p-8">
+    <div class="glass-morphism w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden border border-gray-200">
+        <div class="md:flex">
+            <!-- 左側設定區 -->
+            <div class="md:w-1/2 p-6 md:p-10 bg-white/50 border-b md:border-b-0 md:border-r border-gray-200">
+                <header class="mb-8">
+                    <h1 class="text-3xl font-extrabold text-gray-900 flex items-center gap-2">
+                        地底迷宮計算機
+                    </h1>
+                </header>
+
+                <div class="space-y-6">
+                    <!-- 模式選擇 -->
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-3">選擇計算模式</label>
+                        <div class="grid grid-cols-1 gap-3">
+                            <label class="mode-card cursor-pointer relative">
+                                <input type="radio" name="mode" value="1" class="peer sr-only" checked>
+                                <div class="p-4 border-2 rounded-xl peer-checked:border-indigo-600 peer-checked:bg-indigo-50 hover:bg-gray-50 border-gray-200">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-medium text-gray-900">預測抵達樓層</span>
+                                        <span class="text-indigo-600 opacity-0 peer-checked:opacity-100 font-bold">✓</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="mode-card cursor-pointer relative">
+                                <input type="radio" name="mode" value="2" class="peer sr-only">
+                                <div class="p-4 border-2 rounded-xl peer-checked:border-indigo-600 peer-checked:bg-indigo-50 hover:bg-gray-50 border-gray-200">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-medium text-gray-900">檢測我的運氣</span>
+                                        <span class="text-indigo-600 opacity-0 peer-checked:opacity-100 font-bold">✓</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="mode-card cursor-pointer relative">
+                                <input type="radio" name="mode" value="3" class="peer sr-only">
+                                <div class="p-4 border-2 rounded-xl peer-checked:border-indigo-600 peer-checked:bg-indigo-50 hover:bg-gray-50 border-gray-200">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-medium text-gray-900">樓層消耗查詢</span>
+                                        <span class="text-indigo-600 opacity-0 peer-checked:opacity-100 font-bold">✓</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 動態輸入欄位 -->
+                    <div id="input-container" class="grid grid-cols-1 gap-4">
+                        <!-- 由 JS 動態注入 -->
+                    </div>
+
+                    <button id="calculate-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                        開始計算
+                    </button>
+                </div>
+            </div>
+
+            <!-- 右側結果區 -->
+            <div class="md:w-1/2 p-6 md:p-10 flex flex-col">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">計算結果</h2>
+                </div>
+
+                <div id="results" class="result-scroll flex-grow overflow-y-auto space-y-4 max-h-[500px] pr-2">
+                    <div class="text-center py-20">
+                        <div class="text-4xl mb-4">📊</div>
+                        <p class="text-gray-400">尚無計算結果</p>
+                    </div>
+                </div>
+
+                <footer class="mt-8 pt-6 border-t border-gray-100">
+                    <div class="flex items-center justify-between text-xs text-gray-400">
+                        <p>Developed by internet cafe</p>
+                        <a href="https://github.com/KEVIN970712/GrandAbyss_Calculator" target="_blank" class="hover:text-indigo-600 flex items-center gap-1">
+                            View on GitHub
+                        </a>
+                    </div>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 核心邏輯與常數 ---
+        const MAX_FLOOR = 100;
+        const MIN_REMAINING_CATS_FOR_TRAP = 10;
+        const PROBABILITY_DIVISORS = { PLUS_2: 5, PLUS_1: 3, MINUS_0: 3, MINUS_1: 7.5 };
+        const MIN_PROBABILITY_DISPLAY_THRESHOLD = 0.00005;
+
+        // --- DOM 元素 ---
+        const modeRadios = document.querySelectorAll('input[name="mode"]');
+        const inputContainer = document.getElementById('input-container');
+        const calculateBtn = document.getElementById('calculate-btn');
+        const resultsDiv = document.getElementById('results');
+
+        // --- 輸入配置 ---
+        const inputs = {
+            startfloor: { label: '目前樓層', placeholder: '0', type: 'number', icon: '' },
+            catCount: { label: '剩餘角色總數', placeholder: '10', type: 'number', icon: '' },
+            predictedLosses: { label: '預計後續敗場', placeholder: '0', type: 'number', icon: '' },
+            totalLosses: { label: '累積敗場(含中途退出)', placeholder: '0', type: 'number', icon: '' },
+            targetFloor: { label: '目標查詢樓層', placeholder: '100', type: 'number', icon: '' }
+        };
+
+        const modeConfigs = {
+            '1': ['startfloor', 'catCount', 'predictedLosses'],
+            '2': ['catCount', 'totalLosses'],
+            '3': ['targetFloor']
+        };
+
+        // --- 初始化 UI ---
+        function renderInputs() {
+            const currentMode = document.querySelector('input[name="mode"]:checked').value;
+            inputContainer.innerHTML = '';
+            modeConfigs[currentMode].forEach(key => {
+                const config = inputs[key];
+                const html = `
+                    <div class="relative">
+                        <label class="text-xs font-bold text-gray-500 absolute -top-2 left-3 bg-white px-1 z-10">${config.label}</label>
+                        <div class="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-indigo-500 transition-colors bg-white">
+                            <span class="pl-4 text-lg">${config.icon}</span>
+                            <input type="${config.type}" id="${key}" value="${config.placeholder}" 
+                                   class="w-full p-3 outline-none text-gray-800 font-medium">
+                        </div>
+                    </div>
+                `;
+                inputContainer.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        modeRadios.forEach(radio => radio.addEventListener('change', () => {
+            renderInputs();
+            resultsDiv.innerHTML = '<div class="text-center py-20"><div class="text-4xl mb-4">📊</div><p class="text-gray-400">尚無計算結果</p></div>';
+        }));
+
+        // --- 計算與邏輯 ---
+        function getAverageLossForFloor(floor) {
+            if (floor % 10 === 0 || floor === 99) return 8;
+            if (floor < 30) return 4;
+            if (floor < 60) return 5;
+            return 6;
+        }
+
+        function createResultItem(title, value, colorClass = "text-indigo-600") {
+            return `
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center animate-fadeIn">
+                    <span class="text-gray-600 font-medium">${title}</span>
+                    <span class="font-bold ${colorClass}">${value}</span>
+                </div>
+            `;
+        }
+
+        calculateBtn.addEventListener('click', () => {
+            const currentMode = document.querySelector('input[name="mode"]:checked').value;
+            resultsDiv.innerHTML = '';
+
+            let startFloor = 0, catCount = 0, targetFloorInputVal = 0;
+
+            if (currentMode === '1') {
+                startFloor = parseInt(document.getElementById('startfloor').value) || 0;
+                catCount = (parseInt(document.getElementById('catCount').value) || 0) - 2 * (parseInt(document.getElementById('predictedLosses').value) || 0);
+            } else if (currentMode === '2') {
+                catCount = (parseInt(document.getElementById('catCount').value) || 0) - 2 * (parseInt(document.getElementById('totalLosses').value) || 0);
+            } else if (currentMode === '3') {
+                catCount = 10;
+                targetFloorInputVal = parseInt(document.getElementById('targetFloor').value) || 0;
+            }
+
+            // 驗證
+            if (currentMode === '3' && (targetFloorInputVal <= 0 || targetFloorInputVal > MAX_FLOOR)) {
+                resultsDiv.innerHTML = createResultItem('錯誤', '請輸入 1-100 之間的樓層', 'text-red-500');
+                return;
+            }
+
+            const floorProbabilities = Array(MAX_FLOOR + 1).fill(null).map(() => ({}));
+            
+            if (currentMode === '3') {
+                floorProbabilities[0] = { 10: 100 };
+            } else {
+                floorProbabilities[startFloor] = { [catCount]: 100 };
+            }
+
+            // 特殊起始情況
+            if ((currentMode === '1' || currentMode === '2') && catCount < MIN_REMAINING_CATS_FOR_TRAP) {
+                resultsDiv.innerHTML = createResultItem(`${startFloor}層`, '100% 死亡率');
+                return;
+            }
+
+            for (let i = startFloor + 1; i <= MAX_FLOOR; i++) {
+                const avgLoss = getAverageLossForFloor(i);
+                const prevFloor = floorProbabilities[i - 1];
+
+                for (const catStateStr in prevFloor) {
+                    const catState = parseInt(catStateStr);
+                    const prob = prevFloor[catStateStr];
+
+                    const update = (newVal, div) => {
+                        floorProbabilities[i][newVal] = (floorProbabilities[i][newVal] || 0) + prob / div;
+                    };
+
+                    if (currentMode === '1' || currentMode === '2') {
+                        if (catState >= MIN_REMAINING_CATS_FOR_TRAP) {
+                            update(catState - avgLoss + 2, PROBABILITY_DIVISORS.PLUS_2);
+                            update(catState - avgLoss + 1, PROBABILITY_DIVISORS.PLUS_1);
+                            update(catState - avgLoss, PROBABILITY_DIVISORS.MINUS_0);
+                            update(catState - avgLoss - 1, PROBABILITY_DIVISORS.MINUS_1);
+                        }
+                    } else {
+                        update(catState + avgLoss - 2, PROBABILITY_DIVISORS.PLUS_2);
+                        update(catState + avgLoss - 1, PROBABILITY_DIVISORS.PLUS_1);
+                        update(catState + avgLoss, PROBABILITY_DIVISORS.MINUS_0);
+                        update(catState + avgLoss + 1, PROBABILITY_DIVISORS.MINUS_1);
+                    }
+                }
+
+                // 輸出結果
+                if (currentMode === '1' || currentMode === '2') {
+                    let probFail = 0;
+                    if (i !== MAX_FLOOR) {
+                        for (const s in floorProbabilities[i]) if (parseInt(s) < MIN_REMAINING_CATS_FOR_TRAP) probFail += floorProbabilities[i][s];
+                    } else {
+                        for (const s in floorProbabilities[i]) probFail += floorProbabilities[i][s];
+                    }
+                    if (probFail > MIN_PROBABILITY_DISPLAY_THRESHOLD) {
+                        resultsDiv.insertAdjacentHTML('beforeend', createResultItem(`${i} 層`, `${probFail.toFixed(4)}%`));
+                    }
+                }
+
+                if (currentMode === '3' && i === targetFloorInputVal - 1) {
+                    const sorted = Object.entries(floorProbabilities[i])
+                        .filter(([, p]) => p > MIN_PROBABILITY_DISPLAY_THRESHOLD)
+                        .sort(([a], [b]) => a - b);
+                    
+                    sorted.forEach(([cats, p]) => {
+                        resultsDiv.insertAdjacentHTML('beforeend', createResultItem(`消耗 ${cats} 角色`, `${p.toFixed(4)}%`));
+                    });
+                }
+            }
+        });
+
+        // 啟動
+        renderInputs();
+    </script>
+</body>
+</html>

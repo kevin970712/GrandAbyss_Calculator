@@ -5,352 +5,186 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>地底迷宮機率計算機</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        /* 設定全域字體為 Inter，並給予淺灰色背景 */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-        }
-        /* 隱藏數字輸入框的上下箭頭，讓介面更簡潔 */
-        input[type=number]::-webkit-inner-spin-button,
-        input[type=number]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        input[type=number] {
-            -moz-appearance: textfield;
-        }
+        body { font-family: 'Noto Sans TC', sans-serif; background: #ffffff; }
+        .glass-morphism { background: #ffffff; border: 1px solid #e5e7eb; }
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .result-scroll::-webkit-scrollbar { width: 6px; }
+        .result-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
+        .result-scroll::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md md:max-w-2xl lg:max-w-3xl">
-        <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">地底迷宮機率計算機</h1>
-
-        <div class="mb-6">
-            <p class="text-lg font-semibold text-gray-700 mb-3">請問你要?</p>
-            <div class="flex flex-col space-y-3">
-                <label class="inline-flex items-center text-gray-700">
-                    <input type="radio" name="mode" value="1" class="form-radio h-5 w-5 text-indigo-600" checked>
-                    <span class="ml-2 text-base">1. 預測能抵達樓層</span>
-                </label>
-                <label class="inline-flex items-center text-gray-700">
-                    <input type="radio" name="mode" value="2" class="form-radio h-5 w-5 text-indigo-600">
-                    <span class="ml-2 text-base">2. 看自己運氣如何</span>
-                </label>
-                <label class="inline-flex items-center text-gray-700">
-                    <input type="radio" name="mode" value="3" class="form-radio h-5 w-5 text-indigo-600">
-                    <span class="ml-2 text-base">3. 查詢特定樓層消耗貓數的機率</span>
-                </label>
+<body class="min-h-screen flex items-center justify-center p-4 md:p-8">
+    <div class="glass-morphism w-full max-w-4xl rounded-3xl shadow-lg overflow-hidden border border-gray-200">
+        <div class="md:flex">
+            <div class="md:w-1/2 p-6 md:p-10 bg-white/50 border-b md:border-b-0 md:border-r border-gray-200">
+                <header class="mb-8">
+                    <h1 class="text-3xl font-extrabold text-gray-900 flex items-center gap-2">地底迷宮計算機</h1>
+                </header>
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-3">選擇計算模式</label>
+                        <div class="grid grid-cols-1 gap-3">
+                            <label class="mode-card cursor-pointer relative">
+                                <input type="radio" name="mode" value="1" class="peer sr-only" checked>
+                                <div class="p-4 border-2 rounded-xl peer-checked:border-indigo-600 peer-checked:bg-indigo-50 hover:bg-gray-50 border-gray-200">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-medium text-gray-900">預測抵達樓層</span>
+                                        <span class="text-indigo-600 opacity-0 peer-checked:opacity-100 font-bold">✓</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="mode-card cursor-pointer relative">
+                                <input type="radio" name="mode" value="2" class="peer sr-only">
+                                <div class="p-4 border-2 rounded-xl peer-checked:border-indigo-600 peer-checked:bg-indigo-50 hover:bg-gray-50 border-gray-200">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-medium text-gray-900">檢測我的運氣</span>
+                                        <span class="text-indigo-600 opacity-0 peer-checked:opacity-100 font-bold">✓</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="mode-card cursor-pointer relative">
+                                <input type="radio" name="mode" value="3" class="peer sr-only">
+                                <div class="p-4 border-2 rounded-xl peer-checked:border-indigo-600 peer-checked:bg-indigo-50 hover:bg-gray-50 border-gray-200">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-medium text-gray-900">樓層消耗查詢</span>
+                                        <span class="text-indigo-600 opacity-0 peer-checked:opacity-100 font-bold">✓</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="input-container" class="grid grid-cols-1 gap-4"></div>
+                    <button id="calculate-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg flex items-center justify-center gap-2">
+                        開始計算
+                    </button>
+                </div>
             </div>
-        </div>
-
-        <div id="input-fields" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div id="startfloor-group" class="hidden">
-                <label for="startfloor" class="block text-sm font-medium text-gray-700 mb-1">你目前到第幾層?</label>
-                <input type="number" id="startfloor" min="0" value="0" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            <div class="md:w-1/2 p-6 md:p-10 flex flex-col">
+                <h2 class="text-xl font-bold text-gray-800 mb-6">計算結果</h2>
+                <div id="results" class="result-scroll flex-grow overflow-y-auto space-y-4 max-h-[500px] pr-2">
+                    <div class="text-center py-20">
+                        <div class="text-4xl mb-4">📊</div>
+                        <p class="text-gray-400">尚無計算結果</p>
+                    </div>
+                </div>
+                <footer class="mt-8 pt-6 border-t border-gray-100">
+                    <div class="flex items-center justify-between text-xs text-gray-400">
+                        <p>Developed by internet cafe</p>
+                        <a href="https://github.com/KEVIN970712/GrandAbyss_Calculator" target="_blank" class="flex items-center gap-1">View on GitHub</a>
+                    </div>
+                </footer>
             </div>
-
-            <div id="cat-count-group" class="hidden">
-                <label for="cat-count" class="block text-sm font-medium text-gray-700 mb-1">你剩下多少角色?(包含隊伍內剩下的)</label>
-                <input type="number" id="cat-count" min="0" value="10" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-            </div>
-
-            <div id="predicted-losses-group" class="hidden">
-                <label for="predicted-losses" class="block text-sm font-medium text-gray-700 mb-1">你預計後面會輸幾場?(不算之前已經輸過的)</label>
-                <input type="number" id="predicted-losses" min="0" value="0" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-            </div>
-
-            <div id="total-losses-group" class="hidden">
-                <label for="total-losses" class="block text-sm font-medium text-gray-700 mb-1">你總共輸幾場(包含中途退出的狀況)</label>
-                <input type="number" id="total-losses" min="0" value="0" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-            </div>
-
-            <div id="target-floor-group" class="hidden">
-                <label for="target-floor" class="block text-sm font-medium text-gray-700 mb-1">請問要查詢哪一層?</label>
-                <input type="number" id="target-floor" min="1" value="1" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-            </div>
-        </div>
-
-        <button id="calculate-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out transform hover:scale-105">
-            開始計算
-        </button>
-
-        <div id="results" class="mt-8 p-4 bg-gray-100 rounded-lg shadow-inner max-h-96 overflow-y-auto text-gray-800 text-sm leading-relaxed">
-            <p class="text-center text-gray-500">計算結果將顯示在這裡。</p>
-        </div>
-
-        <div class="mt-6 text-center text-gray-600 text-sm flex items-center justify-center space-x-2">
-            <p>在<a href="https://github.com/KEVIN970712/GrandAbyss_Calculator" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline font-semibold">GitHub</a>查看此專案的原始碼</p>
         </div>
     </div>
 
     <script>
-        // --- 常數定義 ---
-        const MAX_FLOOR = 100; // 地底迷宮的最高樓層
-        const MIN_REMAINING_CATS_FOR_TRAP = 10; // 觸發陷阱所需的最少貓咪數量
-        // 各種貓咪損失情況的機率分母
-        const PROBABILITY_DIVISORS = {
-            PLUS_2: 5,   // 失去平均數-2 隻貓的機率分母
-            PLUS_1: 3,   // 失去平均數-1 隻貓的機率分母
-            MINUS_0: 3,  // 失去平均數 隻貓的機率分母
-            MINUS_1: 7.5 // 失去平均數+1 隻貓的機率分母
+        const MAX_FLOOR = 100;
+        const MIN_TRAP = 10;
+        const MIN_DISPLAY = 0.00005;
+
+        const inputs = {
+            startfloor: { label: '目前樓層', placeholder: '0' },
+            catCount: { label: '剩餘角色總數', placeholder: '10' },
+            predictedLosses: { label: '預計後續敗場', placeholder: '0' },
+            totalLosses: { label: '累積敗場(含中途退出)', placeholder: '0' },
+            targetFloor: { label: '目標查詢樓層', placeholder: '100' }
         };
-        const MIN_PROBABILITY_DISPLAY_THRESHOLD = 0.00005; // 低於此機率的結果將不顯示
 
-        // --- DOM 元素參考 ---
-        // 取得所有模式選擇的單選按鈕
-        const modeRadios = document.querySelectorAll('input[name="mode"]');
-        // 取得各輸入欄位群組的 DOM 元素
-        const startfloorGroup = document.getElementById('startfloor-group');
-        const catCountGroup = document.getElementById('cat-count-group');
-        const predictedLossesGroup = document.getElementById('predicted-losses-group');
-        const totalLossesGroup = document.getElementById('total-losses-group');
-        const targetFloorGroup = document.getElementById('target-floor-group');
+        const modeMap = { '1': ['startfloor', 'catCount', 'predictedLosses'], '2': ['catCount', 'totalLosses'], '3': ['targetFloor'] };
 
-        // 取得各輸入欄位的 DOM 元素
-        const startfloorInput = document.getElementById('startfloor');
-        const catCountInput = document.getElementById('cat-count');
-        const predictedLossesInput = document.getElementById('predicted-losses');
-        const totalLossesInput = document.getElementById('total-losses');
-        const targetFloorInput = document.getElementById('target-floor');
-
-        // 取得計算按鈕和結果顯示區塊的 DOM 元素
-        const calculateBtn = document.getElementById('calculate-btn');
-        const resultsDiv = document.getElementById('results');
-
-        // --- 狀態變數 ---
-        let currentMode = '1'; // 預設為模式 1
-
-        // --- 輔助函數 ---
-
-        function updateInputVisibility() {
-            // 先隱藏所有輸入群組
-            startfloorGroup.classList.add('hidden');
-            catCountGroup.classList.add('hidden');
-            predictedLossesGroup.classList.add('hidden');
-            totalLossesGroup.classList.add('hidden');
-            targetFloorGroup.classList.add('hidden');
-
-            // 再根據當前模式顯示對應的群組
-            if (currentMode === '1') {
-                startfloorGroup.classList.remove('hidden');
-                catCountGroup.classList.remove('hidden');
-                predictedLossesGroup.classList.remove('hidden');
-            } else if (currentMode === '2') {
-                catCountGroup.classList.remove('hidden');
-                totalLossesGroup.classList.remove('hidden');
-            } else if (currentMode === '3') {
-                targetFloorGroup.classList.remove('hidden');
-            }
+        function renderInputs() {
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            document.getElementById('input-container').innerHTML = modeMap[mode].map(key => `
+                <div class="relative">
+                    <label class="text-xs font-bold text-gray-500 absolute -top-2 left-3 bg-white px-1 z-10">${inputs[key].label}</label>
+                    <div class="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-indigo-500 bg-white">
+                        <input type="number" id="${key}" value="${inputs[key].placeholder}" class="w-full p-3 outline-none text-gray-800 font-medium">
+                    </div>
+                </div>
+            `).join('');
         }
 
-        /**
-         * 將計算結果訊息添加到結果顯示區塊。
-         * @param {string} message - 要顯示的訊息。
-         * @param {string} [colorClass='text-gray-800'] - 訊息文字的 Tailwind CSS 顏色類別。
-         */
-        function addResult(message, colorClass = 'text-gray-800') {
-            const p = document.createElement('p');
-            p.textContent = message;
-            p.classList.add(colorClass);
-            resultsDiv.appendChild(p);
+        function getAvgLoss(f) {
+            if (f % 10 === 0 || f === 99) return 8;
+            if (f < 30) return 4;
+            if (f < 60) return 5;
+            return 6;
         }
 
-        /**
-         * 根據樓層範圍，取得該樓層的平均貓咪損失數量。
-         * 這是根據迷宮的難度設定的。
-         * @param {number} floor - 當前樓層。
-         * @returns {number} 平均損失貓咪數量。
-         */
-        function getAverageLossForFloor(floor) {
-            if (floor % 10 === 0 || floor === 99) {
-                return 8; // 每10層或99層，損失較多
-            } else if (floor < 30) {
-                return 4; // 30層以下，損失較少
-            } else if (floor < 60) {
-                return 5; // 30到60層，損失中等
-            } else {
-                return 6; // 60層以上，損失較多
-            }
+        function createItem(t, v, c = "text-indigo-600") {
+            return `<div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center"><span class="text-gray-600 font-medium">${t}</span><span class="font-bold ${c}">${v}</span></div>`;
         }
 
-        /**
-         * 根據前一層的貓咪狀態機率，計算當前樓層的貓咪狀態機率。
-         * 這是模擬貓咪在迷宮中遭遇陷阱後，數量變化的核心邏輯。
-         * @param {number} avgLoss - 當前樓層的平均損失貓咪數量。
-         * @param {number} currentFloor - 正在計算的樓層。
-         * @param {Array<Object>} floorProbabilities - 儲存各樓層貓咪機率的陣列。
-         */
-        function calculateFloorProbabilities(avgLoss, currentFloor, floorProbabilities) {
-            const previousFloorProbabilities = floorProbabilities[currentFloor - 1];
+        document.querySelectorAll('input[name="mode"]').forEach(r => r.addEventListener('change', renderInputs));
 
-            // 遍歷前一層的所有貓咪狀態及其機率
-            for (const catStateStr in previousFloorProbabilities) {
-                const catState = parseInt(catStateStr); // 將字串鍵轉換回數字
-                const probability = previousFloorProbabilities[catStateStr];
+        document.getElementById('calculate-btn').addEventListener('click', () => {
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            const resDiv = document.getElementById('results');
+            resDiv.innerHTML = '';
 
-                // 根據不同的損失情況，更新當前樓層的貓咪機率分佈
-                // (i - avgLoss + 2) 代表損失比平均少2隻，以此類推
-                const updateProbability = (newCatState, divisor) => {
-                    floorProbabilities[currentFloor][newCatState] =
-                        (floorProbabilities[currentFloor][newCatState] || 0) + probability / divisor;
-                };
+            let start = 0, cats = 0, targetVal = 0;
 
-                if (currentMode === '1' || currentMode === '2') {
-                    // 模式 1 和 2：計算剩餘貓咪數量，如果剩餘貓咪太少則無法繼續前進
-                    if (catState >= MIN_REMAINING_CATS_FOR_TRAP) {
-                        updateProbability(catState - avgLoss + 2, PROBABILITY_DIVISORS.PLUS_2);
-                        updateProbability(catState - avgLoss + 1, PROBABILITY_DIVISORS.PLUS_1);
-                        updateProbability(catState - avgLoss, PROBABILITY_DIVISORS.MINUS_0);
-                        updateProbability(catState - avgLoss - 1, PROBABILITY_DIVISORS.MINUS_1);
-                    }
-                } else if (currentMode === '3') {
-                    // 模式 3：計算總共損失的貓咪數量
-                    updateProbability(catState + avgLoss - 2, PROBABILITY_DIVISORS.PLUS_2);
-                    updateProbability(catState + avgLoss - 1, PROBABILITY_DIVISORS.PLUS_1);
-                    updateProbability(catState + avgLoss, PROBABILITY_DIVISORS.MINUS_0);
-                    updateProbability(catState + avgLoss + 1, PROBABILITY_DIVISORS.MINUS_1);
-                }
+            if (mode === '1') {
+                start = parseInt(document.getElementById('startfloor').value) || 0;
+                cats = (parseInt(document.getElementById('catCount').value) || 0) - 2 * (parseInt(document.getElementById('predictedLosses').value) || 0);
+            } else if (mode === '2') {
+                cats = (parseInt(document.getElementById('catCount').value) || 0) - 2 * (parseInt(document.getElementById('totalLosses').value) || 0);
+            } else if (mode === '3') {
+                targetVal = parseInt(document.getElementById('targetFloor').value) || 0;
+                cats = 10;
+                if (targetVal <= 0 || targetVal > MAX_FLOOR) return resDiv.innerHTML = createItem('錯誤', '請輸入 1-100', 'text-red-500');
             }
 
-            // 根據模式顯示結果
-            if (currentMode === '1' || currentMode === '2') {
-                let probabilityOfFailure = 0;
-                // 統計無法繼續前進（貓咪少於最低數量）的機率
-                if (currentFloor !== MAX_FLOOR) {
-                    for (const catStateStr in floorProbabilities[currentFloor]) {
-                        const catState = parseInt(catStateStr);
-                        if (catState < MIN_REMAINING_CATS_FOR_TRAP) {
-                            probabilityOfFailure += floorProbabilities[currentFloor][catStateStr];
+            if (mode !== '3' && cats < MIN_TRAP) return resDiv.innerHTML = createItem(`${start}層`, '100.0000%');
+
+            const floorProbs = Array(MAX_FLOOR + 1).fill(null).map(() => ({}));
+            if (mode === '3') { floorProbs[0] = { 10: 100 }; } else { floorProbs[start] = { [cats]: 100 }; }
+
+            let resultsHTML = '';
+            for (let i = start + 1; i <= MAX_FLOOR; i++) {
+                const avg = getAvgLoss(i);
+                const prev = floorProbs[i - 1];
+
+                for (const sStr in prev) {
+                    const s = parseInt(sStr);
+                    const p = prev[sStr];
+                    const update = (nv, dv) => { floorProbs[i][nv] = (floorProbs[i][nv] || 0) + p / dv; };
+
+                    if (mode === '1' || mode === '2') {
+                        if (s >= MIN_TRAP) {
+                            update(s - avg + 2, 5); update(s - avg + 1, 3);
+                            update(s - avg, 3); update(s - avg - 1, 7.5);
                         }
+                    } else {
+                        update(s + avg - 2, 5); update(s + avg - 1, 3);
+                        update(s + avg, 3); update(s + avg + 1, 7.5);
                     }
-                } else { // 如果已經達到最高樓層，則所有機率都算作抵達
-                    for (const catStateStr in floorProbabilities[currentFloor]) {
-                        probabilityOfFailure += floorProbabilities[currentFloor][catStateStr];
+                }
+
+                if (mode !== '3') {
+                    let fail = 0;
+                    if (i !== MAX_FLOOR) {
+                        for (const s in floorProbs[i]) if (parseInt(s) < MIN_TRAP) fail += floorProbs[i][s];
+                    } else {
+                        for (const s in floorProbs[i]) fail += floorProbs[i][s];
                     }
+                    if (fail > MIN_DISPLAY) resultsHTML += createItem(`${i} 層`, `${fail.toFixed(4)}%`);
                 }
 
-                // 如果機率顯著，則顯示結果
-                if (probabilityOfFailure > MIN_PROBABILITY_DISPLAY_THRESHOLD) {
-                    addResult(`${currentFloor}層--${probabilityOfFailure.toFixed(4)}%`);
+                if (mode === '3' && i === targetVal - 1) {
+                    Object.entries(floorProbs[i])
+                        .filter(([, p]) => p > MIN_DISPLAY)
+                        .sort((a, b) => a[0] - b[0])
+                        .forEach(([s, p]) => { resultsHTML += createItem(`${s} 貓`, `${p.toFixed(4)}%`); });
+                    break; 
                 }
             }
-
-            // 模式 3 特殊輸出：在目標樓層顯示各消耗貓數的機率
-            if (currentMode === '3' && currentFloor + 1 === parseInt(targetFloorInput.value)) {
-                // 過濾掉微不足道的機率，並按消耗貓數排序，方便閱讀
-                const sortedLostCatProbabilities = Object.entries(floorProbabilities[currentFloor])
-                    .filter(([, prob]) => prob > MIN_PROBABILITY_DISPLAY_THRESHOLD)
-                    .sort(([catA], [catB]) => parseInt(catA) - parseInt(catB));
-
-                sortedLostCatProbabilities.forEach(([lostCats, prob]) => {
-                    addResult(`${lostCats}貓--${prob.toFixed(4)}%`);
-                });
-            }
-        }
-
-        /**
-         * 初始化各樓層的貓咪機率分佈陣列。
-         * 這是計算的起點。
-         * @param {number} initialCatCount - 初始貓咪數量（或模式3的固定值）。
-         * @param {number} initialFloor - 起始樓層。
-         * @returns {Array<Object>} 初始化後的樓層機率陣列。
-         */
-        function initializeFloorProbabilities(initialCatCount, initialFloor) {
-            // 創建一個陣列，每個元素都是一個空物件，代表該樓層的貓咪機率分佈
-            const floorProbabilities = Array(MAX_FLOOR + 1).fill(null).map(() => ({}));
-
-            if (currentMode === '3') {
-                // 模式 3：為了與原始 Python 程式碼的行為一致，將第 0 層的初始消耗貓數設定為 10。
-                // 原始 Python 程式碼中，catlist[0] 被設定為 {10: 100}。
-                floorProbabilities[0] = { 10: 100 };
-            } else {
-                // 模式 1 和 2：在起始樓層，初始貓咪數量的機率為 100%
-                if (initialFloor >= 0 && initialFloor <= MAX_FLOOR) {
-                    floorProbabilities[initialFloor] = { [initialCatCount]: 100 };
-                } else {
-                    addResult('起始樓層超出範圍 (0-100)。', 'text-red-500');
-                    return null; // 表示初始化失敗
-                }
-            }
-            return floorProbabilities;
-        }
-
-        // --- 事件處理器 ---
-
-        // 監聽模式選擇按鈕的變化，並更新輸入欄位的顯示
-        modeRadios.forEach(radio => {
-            radio.addEventListener('change', (event) => {
-                currentMode = event.target.value;
-                updateInputVisibility();
-            });
+            resDiv.innerHTML = resultsHTML || '<div class="text-center py-20 text-gray-400">尚無計算結果</div>';
         });
 
-        // 監聽計算按鈕的點擊事件
-        calculateBtn.addEventListener('click', () => {
-            // 清空之前的結果
-            resultsDiv.innerHTML = '';
-
-            let startFloor = 0;
-            let catCount = 0;
-            let targetFloor = 0;
-
-            // 根據當前模式解析輸入值
-            if (currentMode === '1') {
-                startFloor = parseInt(startfloorInput.value);
-                catCount = parseInt(catCountInput.value) - 2 * parseInt(predictedLossesInput.value);
-            } else if (currentMode === '2') {
-                startFloor = 0; // 模式 2 的起始樓層固定為 0
-                catCount = parseInt(catCountInput.value) - 2 * parseInt(totalLossesInput.value);
-            } else if (currentMode === '3') {
-                startFloor = 0; // 模式 3 的起始樓層固定為 0
-                catCount = 10; // 模式 3 的貓咪數量固定為 10
-                targetFloor = parseInt(targetFloorInput.value);
-            }
-
-            // 輸入值驗證
-            if (isNaN(startFloor) || isNaN(catCount) || (currentMode === '3' && isNaN(targetFloor))) {
-                addResult('請輸入有效的數字。', 'text-red-500');
-                // 如果有錯誤訊息，則不顯示預設提示
-                return;
-            }
-
-            if (currentMode === '3' && (targetFloor <= 0 || targetFloor > MAX_FLOOR)) {
-                addResult(`查詢樓層必須介於 1 到 ${MAX_FLOOR} 之間。`, 'text-red-500');
-                return;
-            }
-
-            // 在主要計算循環前的初步檢查
-            if ((currentMode === '1' || currentMode === '2') && catCount < MIN_REMAINING_CATS_FOR_TRAP) {
-                addResult(`${startFloor}層--100%`);
-                return;
-            }
-            if (currentMode === '3' && targetFloor <= 1) {
-                addResult('0貓--100%');
-                return;
-            }
-
-            // 初始化樓層機率分佈
-            const floorProbabilities = initializeFloorProbabilities(catCount, startFloor);
-            if (!floorProbabilities) {
-                // 如果初始化失敗（例如起始樓層超出範圍），則不顯示預設提示
-                return;
-            }
-
-            // 主要計算循環：從起始樓層的下一層開始，逐層計算到最高樓層
-            for (let i = startFloor + 1; i <= MAX_FLOOR; i++) {
-                const avgLoss = getAverageLossForFloor(i); // 取得當前樓層的平均損失
-                calculateFloorProbabilities(avgLoss, i, floorProbabilities); // 計算當前樓層的機率
-            }
-
-            // 如果計算完成後結果區塊仍然是空的，則顯示預設提示訊息
-            if (resultsDiv.children.length === 0) {
-                resultsDiv.innerHTML = '<p class="text-center text-gray-500">計算結果將顯示在這裡。</p>';
-            }
-        });
-
-        // --- 初始化 ---
-        updateInputVisibility(); // 頁面載入時設定輸入欄位的初始顯示狀態
+        renderInputs();
     </script>
 </body>
 </html>
